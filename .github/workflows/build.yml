@@ -1,0 +1,40 @@
+name: Build Android APK
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libsqlite3-dev lzip base-essential libffi-dev libssl-dev
+        pip install --upgrade pip
+        pip install buildozer cython git+https://github.com/kivy/kivy.git@master
+
+    - name: Initialize Buildozer
+      run: buildozer init
+
+    - name: Configure buildozer.spec
+      run: |
+        sed -i 's/requirements = python3,kivy/requirements = python3,kivy,plyer/g' buildozer.spec
+        sed -i 's/title = My Application/title = Minimal Launcher/g' buildozer.spec
+        sed -i 's/package.name = myapp/package.name = minimallauncher/g' buildozer.spec
+
+    - name: Build APK with Buildozer
+      run: buildozer -v android debug
+
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: Minimal-Launcher-APK
+        path: bin/*.apk
